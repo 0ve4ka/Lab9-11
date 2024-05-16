@@ -1,0 +1,79 @@
+import telebot
+import sqlite3 as sql
+import csv
+
+TOKEN = '7187394462:AAF4UoOskarpbjt9ScAFrS4zecX5lSiO1TU'
+bot = telebot.TeleBot(TOKEN)
+
+User_Name = ''
+F = ''
+I = ''
+O = ''
+Db = ''
+@bot.message_handler(content_types=['text'])
+def send_message(message):
+    #bot.send_message(message.from_user.id, 'Напишите ваш id')
+    if message.text == '/start':
+        bot.send_message(message.from_user.id, 'Напишите ваш никнейм.')
+        User_Id = message.from_user.id
+        bot.register_next_step_handler(message,print_F,User_Id)
+        #print(message.text)
+    else:
+        bot.send_message(message.from_user.id,'Нужно написать /start')
+
+def print_F (message,User_Id):
+    bot.send_message(message.from_user.id,'Напишите вашу фамилию')
+    User_Name = message.text
+    bot.register_next_step_handler(message, print_I,User_Id,User_Name)
+    print(User_Id)
+
+def print_I (message,User_Id,User_Name):
+    F = message.text
+    bot.send_message(message.from_user.id, 'Напишите ваше имя')
+    bot.register_next_step_handler(message, print_O,User_Id,User_Name,F)
+    print(User_Name)
+
+def print_O (message,User_Id,User_Name,F):
+    bot.send_message(message.from_user.id,'Введите ваше отчествщ')
+    I = message.text
+    bot.register_next_step_handler(message, print_Db,User_Id,User_Name,F,I)
+    print(F)
+def print_Db (message,User_Id,User_Name,F,I):
+    bot.send_message(message.from_user.id, 'Введите вашу дату рождения')
+    O = message.text
+    bot.register_next_step_handler(message, insert_Db,User_Id,User_Name,F,I,O)
+    print(I)
+
+def insert_Db(message,User_Id,User_Name,F,I,O):
+    bot.send_message(message.from_user.id, 'Запомню ;)')
+    Db = message.text
+    con = sql.connect('Test.db')
+    cur = con.cursor()
+    cur.execute('''create table if not exists _user 
+              (
+              Id integer primary key autoincrement,
+              Id_User text,
+              User_Name text,
+              F text,
+              I text,
+              O text,
+              Bd text
+              );''')
+    cur.execute('''insert into _user (Id_User,User_Name,F,I,O,Bd) values ((?),(?),(?),(?),(?),(?))''',
+                (User_Id, User_Name, F, I, O, Db))
+    con.commit()
+    cur.execute('''select * from _user''')
+    result = cur.fetchall()
+    print(result)
+
+    with open('venv/Temp/JoJo.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['User_Name', 'F', 'I', 'O', 'Bd'])
+        for i in cur.execute('''select Id_User,User_Name,F,I,O,Bd from _user'''):
+            writer.writerow(i)
+    con.commit()
+    con.close()
+    print(O)
+
+
+bot.polling(none_stop=True, interval=0)
